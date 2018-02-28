@@ -1,13 +1,12 @@
 package com.bikeme.dao;
 
-import java.util.List;
-
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.persistence.Query;
 
+import org.hibernate.Session;
+import org.hibernate.Transaction;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.bikeme.model.User;
 
@@ -17,16 +16,6 @@ public class UserDaoImpl implements UserDao {
 	@PersistenceContext
 	private EntityManager entityManager;
 
-	@Transactional
-	public User save(User person) {
-		if (person.getId() == null) {
-			entityManager.persist(person);
-			return person;
-		} else {
-			return entityManager.merge(person);
-		}
-	}
-
 	public boolean checkUser(String username, String password) {
 
 		Query query = entityManager.createQuery("from User where username = :username and password = :password");
@@ -34,6 +23,23 @@ public class UserDaoImpl implements UserDao {
 		query.setParameter("password", password);
 
 		return !query.getResultList().isEmpty();
+	}
+
+	public boolean createUser(User user) {
+		boolean result = true;
+		Session session = ((Session) entityManager.getDelegate()).getSessionFactory().openSession();
+		try {
+			Transaction tx = session.beginTransaction();
+			session.save(user);
+			tx.commit();
+		} catch (Exception e) {
+			System.out.println(e);
+			result = false;
+		} finally {
+			session.close();
+		}
+
+		return result;
 	}
 
 }
